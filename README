@@ -3,15 +3,13 @@
     pip install setuptools
 
 
-before building you need to git a kdg distribution
+before building you need to get a kdg distribution
 
     you can find it at: 
     https://github.com/KrokodileGlue/kdg
     git clone it at the same directory of the README
     so you end up with a directory structure like: README pykdgsetup kdg
                                                                       ^contains makefile
-
-
 
 
 this installs a virtual environement in the same directory so you don't mess your system's python installation, python >3.5 required
@@ -21,7 +19,7 @@ take a look at the scripts and use them to experiemnt with the module :)
 
 supported functions at this stage:
     import pykdg
-    match = pykdg.search(pat,search, opt)
+    match = pykdg.search(src, pat, opt)
     match.groups() : gives you number of groups
     match.group( n ) gives you the group at n
     
