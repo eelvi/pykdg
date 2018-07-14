@@ -133,6 +133,7 @@ pykdg_search(PyObject *self, PyObject *args)
     }
 
     ktre_exec(data.kt, data.src, &(data.vec));
+    data.match = data.kt->num_matches;
 
     return (PyObject *) ktre_match_new_c(&data);
 }

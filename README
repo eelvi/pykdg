@@ -12,9 +12,9 @@ before building you need to get a kdg distribution
                                                                       ^contains makefile
 
 
-this installs a virtual environement in the same directory so you don't mess your system's python installation, python >3.5 required
+this installs a virtual environment in the same directory so you don't mess with your system's python installation, python >3.5 required
 
-take a look at the scripts and use them to experiemnt with the module :)
+take a look at the scripts and use them to experiment with the module :)
 
 
 supported functions at this stage:
