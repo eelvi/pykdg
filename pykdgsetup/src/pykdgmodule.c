@@ -2,6 +2,18 @@
  *      
  *      almost everything in these bindings was borrowed from functions in the kdg library
  *      This module is highly unstable, it's very experiemental at the moment
+ *
+ *
+ *
+ *
+ *
+ *   resources that helped in creating this:
+ *       python's c api reference:
+ *         https://docs.python.org/3.7/c-api/
+ *       python's type c api guide
+ *         https://ref.readthedocs.io/en/latest/understanding_python/type_system/PyTypeObject.html
+ *      yizhang's post in microsoft's blog:
+ *        https://blogs.msdn.microsoft.com/yizhang/2018/01/27/calling-c-functions-from-python-part-2-writing-cpython-extensions-using-pythonc-api/
  */
 
 
@@ -10,9 +22,6 @@
 #include "kdgu.h"
 #include "ktre.h"
 
-
-
-typedef struct _ktre_data ktre_data;
 	
 const char *
 encoding_str(enum fmt f)
@@ -37,21 +46,12 @@ encoding_str(enum fmt f)
 kdgu *
 subgroup(kdgu *src, int **vec, int match, int group)
 {
-
-    int i = match;
-    int j = group;
     //borrowed from ktre.c
     kdgu *substr = kdgu_substr(src, 
-                               vec[i][j * 2], 
-                               vec[i][j * 2] + vec[i][j * 2 + 1]);
+                               vec[match][group * 2], 
+                               vec[match][group * 2] + vec[match][group * 2 + 1]);
     return substr;
 }
-
-//forward decl
-//
-//
-//
-static PyObject *ktre_match_new_c(ktre_data *data);
 
 static PyTypeObject ktre_type;
 
@@ -65,13 +65,24 @@ struct _ktre_data{
 };
 
 
+//this thing contains a refrence count and type* in addition to our data below it
+// it is what each instance will point to
+typedef struct {
+    PyObject_HEAD
+    struct _ktre_data data;
 
+} ktre_object;
+
+typedef struct _ktre_data ktre_data;
+
+
+
+static PyObject *ktre_match_new_c(ktre_data *data);
 
 
 static PyObject *
-pykdg_re_s(PyObject *self, PyObject *args)
+pykdg_search(PyObject *self, PyObject *args)
 {
-
     //prototype is src, pat, opt
     const char *py_str1, *py_str2, *py_str3;
     ktre_data data;
@@ -126,32 +137,6 @@ pykdg_re_s(PyObject *self, PyObject *args)
     return (PyObject *) ktre_match_new_c(&data);
 }
 
-
-
-
-
-//credits:
-//python's c api reference:
-//https://docs.python.org/3.7/c-api/
-//python's type c api guide
-//https://ref.readthedocs.io/en/latest/understanding_python/type_system/PyTypeObject.html
-//microsoft's guide
-//https://blogs.msdn.microsoft.com/yizhang/2018/01/27/calling-c-functions-from-python-part-2-writing-cpython-extensions-using-pythonc-api/
-
-
-
-
-//this thing contains a refrence count and type* in addition to our data below it
-// it is what each instance will point to
-
-
-typedef struct {
-    PyObject_HEAD
-    ktre_data data;
-
-} ktre_object;
-
-#define as_ktre(SMTH) ( (ktre_object *) (SMTH) )
 
 static PyObject *
 pykdg_group(PyObject *_self, PyObject *args){
@@ -209,8 +194,7 @@ static PyMethodDef ktre_methods[] = {
 };
 
 
-
-//used inside c, just copies our part of the ktre_object
+//used inside this module, just copies our part of the ktre_object and returns a valid PyObject
 static PyObject *
 ktre_match_new_c(ktre_data *data)
 {
@@ -221,24 +205,15 @@ ktre_match_new_c(ktre_data *data)
 
     return (PyObject *)self;
 }
-//to return none use:
-/* Py_RETURN_NONE */
-/* PyObject* lis =  PyList_New(Py_ssize_t len); */
-/* PyList_Append(PyObject *list, PyObject *item); */
 
-//useless atm dbg, can't be called from python
+
 static PyObject *
 ktre_match_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-    ktre_object *self;
-
-    self = (ktre_object *)type->tp_alloc(type, 0);
-    if (self != NULL) {
-        self->data.match = -2;
-    }
-
-    return (PyObject *)self;
+    PyErr_SetString(PyExc_RuntimeError, "unsupported constructor.");
+    return NULL;
 }
+
 static PyObject *
 ktre_match_dealloc(ktre_object *self){
      
@@ -287,17 +262,14 @@ static PyTypeObject ktre_type = {
     0,                         /* tp_descr_set */
     0,                         /* tp_dictoffset */
     0,                         /* tp_init */
-    _PyObject_New,              /* tp_alloc */
+    0,                        /* tp_alloc */
     ktre_match_new,            /* tp_new */
 };
 
 
 
-
-
-
 static PyMethodDef pykdg_methods[] = {
-    {"__search", pykdg_re_s, METH_VARARGS, "Hmm."},
+    {"__search", pykdg_search , METH_VARARGS, "Hmm."},
 };
 
 static struct PyModuleDef pykdgmodule = {
@@ -308,13 +280,14 @@ static struct PyModuleDef pykdgmodule = {
     pykdg_methods
 };
 
+
 PyMODINIT_FUNC
 PyInit_pykdgc(void)
 {
-    //init function i guess
     if (PyType_Ready(&ktre_type) < 0){
             return NULL;
     }
 
     return PyModule_Create(&pykdgmodule);
 }
+
